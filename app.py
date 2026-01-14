@@ -7,23 +7,39 @@ import datetime
 import uuid
 from huggingface_hub import HfApi
 
-# 1. PAGE SETUP
-st.set_page_config(page_title="AI Health Monitor", page_icon="🫁")
-st.title("🫁 AI Audio Health Monitor")
-st.write("Upload a 4-second audio clip to detect patterns.")
+# 1. PAGE CONFIGURATION (Professional Look)
+st.set_page_config(
+    page_title="RespireAI - Health Monitor",
+    page_icon="🫁",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
-# 2. SETUP SAVING SYSTEM (Tijori Connection)
-# Hum secret pocket se chaabi nikaal rahe hain
+# --- SIDEBAR (About Us & Instructions) ---
+with st.sidebar:
+    st.image("https://img.icons8.com/fluency/96/lungs.png", width=80)
+    st.title("RespireAI")
+    st.markdown("---")
+    st.write("**How to use:**")
+    st.write("1. Record a 4-5 second clip of coughing or breathing.")
+    st.write("2. Upload the audio file.")
+    st.write("3. Get instant AI analysis.")
+    st.markdown("---")
+    st.info("🔒 Your data is contributed anonymously to help train better medical AI models.")
+    st.markdown("---")
+    st.caption("v1.0.0 | Beta Version")
+
+# --- MAIN HEADER ---
+st.title("🫁 AI Personal Audio Health Monitor")
+st.markdown("### Detect respiratory patterns using Artificial Intelligence.")
+st.markdown("*(Upload WAV, MP3, or WEBM files)*")
+
+# 2. SETUP SAVING SYSTEM
 HF_TOKEN = os.getenv("HF_TOKEN")
-# YAHAN APNA DATASET NAAM LIKHO (username/dataset_name)
-DATASET_REPO_ID = "laksh52/collected_audio_data"
+# 👇 YAHAN APNA USERNAME VERIFY KAR LO
+DATASET_REPO_ID = "laksh52/collected_audio_data" 
 
 def save_to_cloud(file_path, predicted_label):
-    # Debugging: Check if token exists
-    if not HF_TOKEN:
-        st.error("❌ Error: HF_TOKEN not found in Secrets. Please add it in Settings.")
-        return False
-    
     if HF_TOKEN and DATASET_REPO_ID:
         try:
             api = HfApi(token=HF_TOKEN)
@@ -39,11 +55,10 @@ def save_to_cloud(file_path, predicted_label):
             )
             return True
         except Exception as e:
-            st.error(f"❌ Save Failed: {e}")  # Ye humein asli reason batayega
             return False
     return False
 
-# 3. LOAD MODEL
+# 3. LOAD ASSETS
 @st.cache_resource
 def load_assets():
     model = tf.keras.models.load_model('audio_cnn_final.keras')
@@ -52,10 +67,9 @@ def load_assets():
     return model, norm_mean, norm_std
 
 try:
-    with st.spinner("Loading AI Brain..."):
-        model, norm_mean, norm_std = load_assets()
+    model, norm_mean, norm_std = load_assets()
 except:
-    st.error("⚠️ Model files missing.")
+    st.error("⚠️ System Maintenance: AI Model is offline.")
     st.stop()
 
 # 4. PREPROCESSING
@@ -74,18 +88,17 @@ def preprocess_audio(file_path, mean, std):
         return spec_db[np.newaxis, ..., np.newaxis]
     except: return None
 
-# 5. UI INTERFACE
-uploaded_file = st.file_uploader("Choose a file...", type=["wav", "mp3", "ogg", "webm"])
+# 5. USER INTERFACE
+uploaded_file = st.file_uploader(" ", label_visibility="collapsed", type=["wav", "mp3", "ogg", "webm"])
 
 if uploaded_file is not None:
-    # Save local temp copy
     with open("temp_audio.wav", "wb") as f:
         f.write(uploaded_file.getbuffer())
     
     st.audio("temp_audio.wav")
 
-    if st.button("🔍 Analyze Audio", type="primary"):
-        with st.spinner("Analyzing..."):
+    if st.button("🔍 Run Analysis", type="primary"):
+        with st.spinner("Analyzing sound waves..."):
             processed_data = preprocess_audio("temp_audio.wav", norm_mean, norm_std)
             
             if processed_data is not None:
@@ -96,21 +109,33 @@ if uploaded_file is not None:
                 classes = ['Cough', 'Heavy Breathing', 'Background Noise', 'Normal']
                 result = classes[class_index] if class_index < len(classes) else "Unknown"
 
-                # SHOW RESULT
+                # SHOW RESULT CARD
                 st.divider()
-                c1, c2 = st.columns(2)
-                c1.metric("Result", result)
-                c2.metric("Confidence", f"{confidence:.1f}%")
-                st.progress(int(confidence))
+                st.subheader("Analysis Result:")
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    if result == "Cough":
+                        st.error(f"⚠️ **{result} Pattern Detected**")
+                        st.write("The audio shows characteristics of a cough.")
+                    elif result == "Heavy Breathing":
+                        st.warning(f"⚠️ **{result} Detected**")
+                        st.write("Signs of respiratory strain or wheezing detected.")
+                    elif result == "Normal":
+                        st.success(f"✅ **{result} Breathing**")
+                        st.write("No abnormal patterns detected.")
+                    else:
+                        st.info(f"🔊 **{result}**")
+                        st.write("This appears to be background noise.")
 
-                if result == "Cough": st.warning("⚠️ Cough Pattern Detected.")
-                elif result == "Heavy Breathing": st.warning("⚠️ Respiratory Strain Detected.")
-                elif result == "Normal": st.success("✅ Sounds Healthy.")
-                else: st.info("🔊 Just Background Noise.")
+                with col2:
+                    st.metric("AI Confidence", f"{confidence:.1f}%")
 
-                # --- SAVE DATA (THE FLYWHEEL) ---
-                # Hum result aane ke baad file save kar rahe hain
-                with st.spinner("Saving data securely..."):
-                    saved = save_to_cloud("temp_audio.wav", result)
-                    if saved:
-                        st.toast("Data contributed anonymously! Thank you. ☁️", icon="✅")
+                # SAVE DATA
+                save_to_cloud("temp_audio.wav", result)
+                st.toast("Data saved for research.", icon="☁️")
+
+# --- DISCLAIMER (VERY IMPORTANT) ---
+st.markdown("---")
+st.warning("⚠️ **Disclaimer:** This AI tool is for educational & research purposes only. It is NOT a medical device and cannot diagnose diseases. Always consult a real doctor for health issues.")
