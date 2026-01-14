@@ -4,3 +4,4 @@ streamlit
 tensorflow
 librosa
 numpy
+huggingface_hub
