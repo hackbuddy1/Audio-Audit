@@ -7,7 +7,7 @@ import datetime
 import uuid
 from huggingface_hub import HfApi
 
-# 1. PAGE CONFIGURATION (Professional Look)
+# 1. PAGE CONFIGURATION
 st.set_page_config(
     page_title="RespireAI - Health Monitor",
     page_icon="🫁",
@@ -15,28 +15,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- SIDEBAR (About Us & Instructions) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/lungs.png", width=80)
     st.title("RespireAI")
     st.markdown("---")
     st.write("**How to use:**")
-    st.write("1. Record a 4-5 second clip of coughing or breathing.")
-    st.write("2. Upload the audio file.")
-    st.write("3. Get instant AI analysis.")
+    st.write("1. Choose 'Upload' or 'Record'.")
+    st.write("2. Provide a 4-5 second cough/breath sound.")
+    st.write("3. Get AI Analysis instantly.")
     st.markdown("---")
-    st.info("🔒 Your data is contributed anonymously to help train better medical AI models.")
-    st.markdown("---")
-    st.caption("v1.0.0 | Beta Version")
+    st.info("🔒 Data contributed anonymously for research.")
+    st.caption("v2.0.0 | Live Recording Added")
 
 # --- MAIN HEADER ---
 st.title("🫁 AI Personal Audio Health Monitor")
-st.markdown("### Detect respiratory patterns using Artificial Intelligence.")
-st.markdown("*(Upload WAV, MP3, or WEBM files)*")
+st.write("Detect respiratory patterns using Artificial Intelligence.")
 
 # 2. SETUP SAVING SYSTEM
 HF_TOKEN = os.getenv("HF_TOKEN")
-# 👇 YAHAN APNA USERNAME VERIFY KAR LO
 DATASET_REPO_ID = "laksh52/collected_audio_data" 
 
 def save_to_cloud(file_path, predicted_label):
@@ -54,7 +51,7 @@ def save_to_cloud(file_path, predicted_label):
                 repo_type="dataset"
             )
             return True
-        except Exception as e:
+        except:
             return False
     return False
 
@@ -69,7 +66,7 @@ def load_assets():
 try:
     model, norm_mean, norm_std = load_assets()
 except:
-    st.error("⚠️ System Maintenance: AI Model is offline.")
+    st.error("⚠️ System Error: Model files missing.")
     st.stop()
 
 # 4. PREPROCESSING
@@ -88,13 +85,30 @@ def preprocess_audio(file_path, mean, std):
         return spec_db[np.newaxis, ..., np.newaxis]
     except: return None
 
-# 5. USER INTERFACE
-uploaded_file = st.file_uploader(" ", label_visibility="collapsed", type=["wav", "mp3", "ogg", "webm"])
+# 5. USER INTERFACE (UPDATED WITH TABS)
+# Humne yahan Tabs bana diye hain
+tab1, tab2 = st.tabs(["📁 Upload File", "🎙️ Record Voice"])
 
-if uploaded_file is not None:
+audio_file = None # Final file jo hum process karenge
+
+with tab1:
+    uploaded_file = st.file_uploader("Upload Audio (WAV, MP3)", type=["wav", "mp3", "ogg", "webm"])
+    if uploaded_file:
+        audio_file = uploaded_file
+
+with tab2:
+    # Ye Naya Feature hai (Streamlit Audio Input)
+    recorded_audio = st.audio_input("Click to Record (4-5 seconds)")
+    if recorded_audio:
+        audio_file = recorded_audio
+
+# --- ANALYSIS LOGIC ---
+if audio_file is not None:
+    # Save temp file
     with open("temp_audio.wav", "wb") as f:
-        f.write(uploaded_file.getbuffer())
+        f.write(audio_file.getbuffer())
     
+    # Show Audio Player
     st.audio("temp_audio.wav")
 
     if st.button("🔍 Run Analysis", type="primary"):
@@ -109,33 +123,26 @@ if uploaded_file is not None:
                 classes = ['Cough', 'Heavy Breathing', 'Background Noise', 'Normal']
                 result = classes[class_index] if class_index < len(classes) else "Unknown"
 
-                # SHOW RESULT CARD
+                # SHOW RESULT
                 st.divider()
                 st.subheader("Analysis Result:")
-                
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
                     if result == "Cough":
-                        st.error(f"⚠️ **{result} Pattern Detected**")
-                        st.write("The audio shows characteristics of a cough.")
+                        st.error(f"⚠️ **{result} Detected**")
                     elif result == "Heavy Breathing":
                         st.warning(f"⚠️ **{result} Detected**")
-                        st.write("Signs of respiratory strain or wheezing detected.")
                     elif result == "Normal":
-                        st.success(f"✅ **{result} Breathing**")
-                        st.write("No abnormal patterns detected.")
+                        st.success(f"✅ **{result} Pattern**")
                     else:
                         st.info(f"🔊 **{result}**")
-                        st.write("This appears to be background noise.")
 
                 with col2:
-                    st.metric("AI Confidence", f"{confidence:.1f}%")
+                    st.metric("Confidence", f"{confidence:.1f}%")
+
+                st.progress(int(confidence))
 
                 # SAVE DATA
                 save_to_cloud("temp_audio.wav", result)
-                st.toast("Data saved for research.", icon="☁️")
-
-# --- DISCLAIMER (VERY IMPORTANT) ---
-st.markdown("---")
-st.warning("⚠️ **Disclaimer:** This AI tool is for educational & research purposes only. It is NOT a medical device and cannot diagnose diseases. Always consult a real doctor for health issues.")
+                st.toast("Data contributed for research.", icon="☁️")
