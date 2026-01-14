@@ -19,15 +19,18 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 DATASET_REPO_ID = "lakshayupadhyay/collected_audio_data" 
 
 def save_to_cloud(file_path, predicted_label):
+    # Debugging: Check if token exists
+    if not HF_TOKEN:
+        st.error("❌ Error: HF_TOKEN not found in Secrets. Please add it in Settings.")
+        return False
+    
     if HF_TOKEN and DATASET_REPO_ID:
         try:
             api = HfApi(token=HF_TOKEN)
-            # Create a unique filename: Cough/2026-01-14_uniqueID.wav
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             unique_id = str(uuid.uuid4())[:8]
             cloud_filename = f"{predicted_label}/{timestamp}_{unique_id}.wav"
             
-            # Upload (Chupchap background mein)
             api.upload_file(
                 path_or_fileobj=file_path,
                 path_in_repo=cloud_filename,
@@ -36,7 +39,7 @@ def save_to_cloud(file_path, predicted_label):
             )
             return True
         except Exception as e:
-            print(f"Save Error: {e}") # User ko error mat dikhao, bas console mein print karo
+            st.error(f"❌ Save Failed: {e}")  # Ye humein asli reason batayega
             return False
     return False
 
