@@ -11,7 +11,7 @@ st.write("Upload a 4-second audio clip (WAV, MP3, WEBM).")
 @st.cache_resource
 def load_model():
     model = tf.keras.model.load_model('audio_cnn_final.keras')
-    mean = np.load("norm_model.npy")
+    mean = np.load("norm_mean.npy")
     std = np.load("norm_std.npy")
     return model, mean, std
 
