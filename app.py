@@ -9,7 +9,7 @@ st.title("AI Audio Health Monitor")
 st.write("Upload a 4-second audio clip (WAV, MP3, WEBM).")
 
 @st.cache_resource
-def load_model():
+def load_assets():
     model = tf.keras.model.load_model('audio_cnn_final.keras')
     mean = np.load("norm_mean.npy")
     std = np.load("norm_std.npy")
@@ -58,7 +58,7 @@ if uploaded_file is not None:
 
     if st.button("Analyze Audio"):
         with st.spinner("AI is listening..."):
-             processed_data = preprocess_audio("temp_audio.wav")
+             processed_data = preprocess_audio("temp_audio.wav", norm_mean, norm_std)
 
         if processed_data is not None:
                
