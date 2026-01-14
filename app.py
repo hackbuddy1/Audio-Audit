@@ -16,7 +16,7 @@ st.write("Upload a 4-second audio clip to detect patterns.")
 # Hum secret pocket se chaabi nikaal rahe hain
 HF_TOKEN = os.getenv("HF_TOKEN")
 # YAHAN APNA DATASET NAAM LIKHO (username/dataset_name)
-DATASET_REPO_ID = "lakshayupadhyay/collected_audio_data" 
+DATASET_REPO_ID = "laksh52/collected_audio_data"
 
 def save_to_cloud(file_path, predicted_label):
     # Debugging: Check if token exists
