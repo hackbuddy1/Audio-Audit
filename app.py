@@ -15,6 +15,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- CONFIDENCE THRESHOLD (The Bouncer) ---
+# Agar confidence isse kam hai, toh hum result reject kar denge
+CONFIDENCE_THRESHOLD = 75 
+
 # --- SIDEBAR ---
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/lungs.png", width=80)
@@ -26,7 +30,7 @@ with st.sidebar:
     st.write("3. Get AI Analysis instantly.")
     st.markdown("---")
     st.info("🔒 Data contributed anonymously for research.")
-    st.caption("v2.0.0 | Live Recording Added")
+    st.caption("v2.1.0 | High Precision Mode")
 
 # --- MAIN HEADER ---
 st.title("🫁 AI Personal Audio Health Monitor")
@@ -85,30 +89,23 @@ def preprocess_audio(file_path, mean, std):
         return spec_db[np.newaxis, ..., np.newaxis]
     except: return None
 
-# 5. USER INTERFACE (UPDATED WITH TABS)
-# Humne yahan Tabs bana diye hain
+# 5. USER INTERFACE
 tab1, tab2 = st.tabs(["📁 Upload File", "🎙️ Record Voice"])
-
-audio_file = None # Final file jo hum process karenge
+audio_file = None 
 
 with tab1:
     uploaded_file = st.file_uploader("Upload Audio (WAV, MP3)", type=["wav", "mp3", "ogg", "webm"])
-    if uploaded_file:
-        audio_file = uploaded_file
+    if uploaded_file: audio_file = uploaded_file
 
 with tab2:
-    # Ye Naya Feature hai (Streamlit Audio Input)
     recorded_audio = st.audio_input("Click to Record (4-5 seconds)")
-    if recorded_audio:
-        audio_file = recorded_audio
+    if recorded_audio: audio_file = recorded_audio
 
 # --- ANALYSIS LOGIC ---
 if audio_file is not None:
-    # Save temp file
     with open("temp_audio.wav", "wb") as f:
         f.write(audio_file.getbuffer())
     
-    # Show Audio Player
     st.audio("temp_audio.wav")
 
     if st.button("🔍 Run Analysis", type="primary"):
@@ -121,28 +118,52 @@ if audio_file is not None:
                 class_index = np.argmax(prediction)
                 
                 classes = ['Cough', 'Heavy Breathing', 'Background Noise', 'Normal']
-                result = classes[class_index] if class_index < len(classes) else "Unknown"
+                raw_result = classes[class_index] if class_index < len(classes) else "Unknown"
 
+                # --- 🛡️ THE SECURITY GATE (BOUNCER LOGIC) ---
+                if confidence < CONFIDENCE_THRESHOLD:
+                    final_result = "Unclear / Unknown"
+                    is_safe = False
+                else:
+                    final_result = raw_result
+                    is_safe = True
+                
                 # SHOW RESULT
                 st.divider()
                 st.subheader("Analysis Result:")
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
-                    if result == "Cough":
-                        st.error(f"⚠️ **{result} Detected**")
-                    elif result == "Heavy Breathing":
-                        st.warning(f"⚠️ **{result} Detected**")
-                    elif result == "Normal":
-                        st.success(f"✅ **{result} Pattern**")
+                    if not is_safe:
+                        # Low Confidence
+                        st.info(f"❓ **{final_result}**")
+                        st.write("The audio is not clear enough. It might be speech, whistling, or random noise.")
+                        st.write("Please record a clear Cough or Breath sound.")
+                    
+                    elif final_result == "Cough":
+                        st.error(f"⚠️ **{final_result} Detected**")
+                        st.write("High confidence cough pattern detected.")
+                    
+                    elif final_result == "Heavy Breathing":
+                        st.warning(f"⚠️ **{final_result} Detected**")
+                        st.write("Signs of respiratory strain detected.")
+                    
+                    elif final_result == "Normal":
+                        st.success(f"✅ **{final_result} Pattern**")
+                        st.write("Breathing sounds healthy.")
+                    
                     else:
-                        st.info(f"🔊 **{result}**")
+                        st.info(f"🔊 **{final_result}**")
+                        st.write("This appears to be background noise.")
 
                 with col2:
-                    st.metric("Confidence", f"{confidence:.1f}%")
+                    st.metric("AI Confidence", f"{confidence:.1f}%")
 
                 st.progress(int(confidence))
 
-                # SAVE DATA
-                save_to_cloud("temp_audio.wav", result)
-                st.toast("Data contributed for research.", icon="☁️")
+                # SAVE DATA (Hum 'Unclear' ko bhi save karenge taaki hum check kar sakein kya fail hua)
+                save_to_cloud("temp_audio.wav", final_result)
+                if is_safe:
+                    st.toast("Result verified.", icon="✅")
+                else:
+                    st.toast("Low confidence sample saved.", icon="⚠️")
