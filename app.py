@@ -7,19 +7,17 @@ import datetime
 import uuid
 from huggingface_hub import HfApi
 
-# 1. PAGE CONFIGURATION
+
 st.set_page_config(
     page_title="RespireAI - Health Monitor",
-    page_icon="🫁",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# --- CONFIDENCE THRESHOLD (The Bouncer) ---
-# Agar confidence isse kam hai, toh hum result reject kar denge
+
 CONFIDENCE_THRESHOLD = 75 
 
-# --- SIDEBAR ---
+
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/lungs.png", width=80)
     st.title("RespireAI")
@@ -29,14 +27,14 @@ with st.sidebar:
     st.write("2. Provide a 4-5 second cough/breath sound.")
     st.write("3. Get AI Analysis instantly.")
     st.markdown("---")
-    st.info("🔒 Data contributed anonymously for research.")
+    st.info("Data contributed anonymously for research.")
     st.caption("v2.1.0 | High Precision Mode")
 
-# --- MAIN HEADER ---
-st.title("🫁 AI Personal Audio Health Monitor")
+
+st.title("AI Personal Audio Health Monitor")
 st.write("Detect respiratory patterns using Artificial Intelligence.")
 
-# 2. SETUP SAVING SYSTEM
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 DATASET_REPO_ID = "laksh52/collected_audio_data" 
 
@@ -59,7 +57,7 @@ def save_to_cloud(file_path, predicted_label):
             return False
     return False
 
-# 3. LOAD ASSETS
+
 @st.cache_resource
 def load_assets():
     model = tf.keras.models.load_model('audio_cnn_final.keras')
@@ -70,10 +68,10 @@ def load_assets():
 try:
     model, norm_mean, norm_std = load_assets()
 except:
-    st.error("⚠️ System Error: Model files missing.")
+    st.error("System Error: Model files missing.")
     st.stop()
 
-# 4. PREPROCESSING
+
 def preprocess_audio(file_path, mean, std):
     SAMPLE_RATE = 22050
     DURATION = 4
@@ -89,8 +87,8 @@ def preprocess_audio(file_path, mean, std):
         return spec_db[np.newaxis, ..., np.newaxis]
     except: return None
 
-# 5. USER INTERFACE
-tab1, tab2 = st.tabs(["📁 Upload File", "🎙️ Record Voice"])
+
+tab1, tab2 = st.tabs(["Upload File", "Record Voice"])
 audio_file = None 
 
 with tab1:
@@ -101,14 +99,14 @@ with tab2:
     recorded_audio = st.audio_input("Click to Record (4-5 seconds)")
     if recorded_audio: audio_file = recorded_audio
 
-# --- ANALYSIS LOGIC ---
+
 if audio_file is not None:
     with open("temp_audio.wav", "wb") as f:
         f.write(audio_file.getbuffer())
     
     st.audio("temp_audio.wav")
 
-    if st.button("🔍 Run Analysis", type="primary"):
+    if st.button("Run Analysis", type="primary"):
         with st.spinner("Analyzing sound waves..."):
             processed_data = preprocess_audio("temp_audio.wav", norm_mean, norm_std)
             
@@ -120,7 +118,7 @@ if audio_file is not None:
                 classes = ['Cough', 'Heavy Breathing', 'Background Noise', 'Normal']
                 raw_result = classes[class_index] if class_index < len(classes) else "Unknown"
 
-                # --- 🛡️ THE SECURITY GATE (BOUNCER LOGIC) ---
+                
                 if confidence < CONFIDENCE_THRESHOLD:
                     final_result = "Unclear / Unknown"
                     is_safe = False
@@ -128,7 +126,7 @@ if audio_file is not None:
                     final_result = raw_result
                     is_safe = True
                 
-                # SHOW RESULT
+                
                 st.divider()
                 st.subheader("Analysis Result:")
                 col1, col2 = st.columns([2, 1])
@@ -136,24 +134,24 @@ if audio_file is not None:
                 with col1:
                     if not is_safe:
                         # Low Confidence
-                        st.info(f"❓ **{final_result}**")
+                        st.info(f"**{final_result}**")
                         st.write("The audio is not clear enough. It might be speech, whistling, or random noise.")
                         st.write("Please record a clear Cough or Breath sound.")
                     
                     elif final_result == "Cough":
-                        st.error(f"⚠️ **{final_result} Detected**")
+                        st.error(f"**{final_result} Detected**")
                         st.write("High confidence cough pattern detected.")
                     
                     elif final_result == "Heavy Breathing":
-                        st.warning(f"⚠️ **{final_result} Detected**")
+                        st.warning(f"**{final_result} Detected**")
                         st.write("Signs of respiratory strain detected.")
                     
                     elif final_result == "Normal":
-                        st.success(f"✅ **{final_result} Pattern**")
+                        st.success(f"**{final_result} Pattern**")
                         st.write("Breathing sounds healthy.")
                     
                     else:
-                        st.info(f"🔊 **{final_result}**")
+                        st.info(f"**{final_result}**")
                         st.write("This appears to be background noise.")
 
                 with col2:
@@ -161,9 +159,9 @@ if audio_file is not None:
 
                 st.progress(int(confidence))
 
-                # SAVE DATA (Hum 'Unclear' ko bhi save karenge taaki hum check kar sakein kya fail hua)
+                
                 save_to_cloud("temp_audio.wav", final_result)
                 if is_safe:
-                    st.toast("Result verified.", icon="✅")
+                    st.toast("Result verified.")
                 else:
-                    st.toast("Low confidence sample saved.", icon="⚠️")
+                    st.toast("Low confidence sample saved.")
