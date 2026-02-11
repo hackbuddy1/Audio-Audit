@@ -9,7 +9,7 @@ from huggingface_hub import HfApi
 
 
 st.set_page_config(
-    page_title="RespireAI - Health Monitor",
+    page_title="Audio-Audit",
     layout="centered",
     initial_sidebar_state="expanded"
 )
@@ -20,7 +20,7 @@ CONFIDENCE_THRESHOLD = 75
 
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/lungs.png", width=80)
-    st.title("RespireAI")
+    st.title("Audio-Audit")
     st.markdown("---")
     st.write("**How to use:**")
     st.write("1. Choose 'Upload' or 'Record'.")
@@ -31,7 +31,7 @@ with st.sidebar:
     st.caption("v2.1.0 | High Precision Mode")
 
 
-st.title("AI Personal Audio Health Monitor")
+st.title("Personal Audio Health Monitor")
 st.write("Detect respiratory patterns using Artificial Intelligence.")
 
 
@@ -133,7 +133,7 @@ if audio_file is not None:
                 
                 with col1:
                     if not is_safe:
-                        # Low Confidence
+                       
                         st.info(f"**{final_result}**")
                         st.write("The audio is not clear enough. It might be speech, whistling, or random noise.")
                         st.write("Please record a clear Cough or Breath sound.")
