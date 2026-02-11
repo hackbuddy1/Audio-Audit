@@ -1,18 +1,4 @@
----
-title: Audio Audit
-emoji: 🫁
-colorFrom: red
-colorTo: red
-sdk: docker
-app_port: 8501
-tags:
-  - streamlit
-  - audio-classification
-  - deep-learning
-  - cnn
-pinned: false
-short_description: AI-based respiratory audio analysis using deep learning
----
+
 
 # Audio Audit
 
