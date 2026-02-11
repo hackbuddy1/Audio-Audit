@@ -14,9 +14,9 @@ pinned: false
 short_description: AI-based respiratory audio analysis using deep learning
 ---
 
-# RespireAI – Audio Audit
+# Audio Audit
 
-RespireAI is a learning-focused machine learning project that analyzes short respiratory audio clips and classifies them into meaningful categories such as **Cough**, **Heavy Breathing**, **Normal Breathing**, and **Background Noise**.
+Audio-Audit is a learning-focused machine learning project that analyzes short respiratory audio clips and classifies them into meaningful categories such as **Cough**, **Heavy Breathing**, **Normal Breathing**, and **Background Noise**.
 
 This project was built as part of my journey from understanding the basics of machine learning to developing and deploying a complete, end-to-end system.
 
